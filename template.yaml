@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  resize image
+
+  Sample SAM Template for sam-app
+  
+Globals:
+  Function:
+    Timeout: 10
+
+Parameters:
+  StageName:
+    Type: String
+    AllowedValues:
+      - prod
+      - stg
+      - dev
+
+Resources:
+  ResizeImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: resize-image/
+      Handler: app.lambdaHandler
+      Runtime: nodejs10.x
+      Events:
+        ResizeImage:
+          Type: Api
+          Properties:
+            Path: /{type}/{size}/{directory}/{contentId}/{subDirectory}/{filename}
+            Method: get
+
+Outputs:
+  ResizeImageApi:
+    Description: "API Gateway endpoint URL for Prod stage for Resize Image function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/resize-image/"
+  ResizeImageFunction:
+    Description: "Resize Image Lambda Function ARN"
+    Value: !GetAtt ResizeImageFunction.Arn
+  ResizeImageFunctionIamRole:
+    Description: "Implicit IAM Role created for Resize Image function"
+    Value: !GetAtt ResizeImageFunctionRole.Arn
