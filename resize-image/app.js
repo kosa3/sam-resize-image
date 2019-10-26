@@ -3,11 +3,9 @@ const AWS = require('aws-sdk');
 const config = {
     endpoint: "http://docker.for.mac.host.internal:4572",
     s3ForcePathStyle: true
-}
-
-const regex = /(.*)(?:\.([^.]+$))/;
-
-const s3 = new AWS.S3(config)
+};
+const env = process.env.Env;
+const s3 = !env ? new AWS.S3() : new AWS.S3(config);
 
 const createResponse = (filename, buffer) => {
     return {
@@ -22,7 +20,7 @@ const createResponse = (filename, buffer) => {
 }
 
 const getExtensionType = (filename) => {
-    let matches = filename.match(regex)
+    let matches = filename.match(/(.*)(?:\.([^.]+$))/)
 
     switch (matches[2]) {
         case 'png':

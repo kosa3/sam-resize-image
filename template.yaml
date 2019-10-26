@@ -3,8 +3,8 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   resize image
 
-  Sample SAM Template for sam-app
-  
+  SAM Template for sam-resize-image
+
 Globals:
   Function:
     Timeout: 10
@@ -31,10 +31,24 @@ Resources:
             Path: /{type}/{size}/{directory}/{contentId}/{subDirectory}/{filename}
             Method: get
 
+  ResizeImageLambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ResizeImageFunction
+      Principal: apigateway.amazonaws.com
+
   ImageProcessingApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Env
+      BinaryMediaTypes: [
+        "application~1octet-stream",
+        "image~1png",
+        "image~1jpeg",
+        "image~1gif",
+        "image~1webp"
+      ]
       DefinitionBody:
         swagger: 2.0
         info:
@@ -44,8 +58,29 @@ Resources:
         schemes:
           - https
         basePath: !Sub /${Env}
+        paths:
+          /{type}/{size}/{directory}/{contentId}/{subDirectory}/{filename}:
+            get:
+              produces:
+                - application/json
+              responses:
+                "200":
+                  description: "200 response"
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Empty"
+                "500":
+                  description: "500 response"
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                uri:
+                  !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ResizeImageFunction.Arn}/invocations
+                responses:
+                  default:
+                    statusCode: "200"
+                type: aws_proxy
         x-amazon-apigateway-binary-media-types: ['application/octet-stream', 'image/jpeg', 'image/png', 'image/gif', 'image/webp']
-
 
 Outputs:
   ImageProcessingApi:
@@ -53,7 +88,7 @@ Outputs:
     Value: !Ref ImageProcessingApi
   ResizeImageFunction:
     Description: "Resize Image Lambda Function ARN"
-    Value: !GetAtt ResizeImageFunction.Arn
+    Value: !Ref ResizeImageFunction
   ResizeImageFunctionIamRole:
     Description: "Implicit IAM Role created for Resize Image function"
     Value: !GetAtt ResizeImageFunctionRole.Arn
